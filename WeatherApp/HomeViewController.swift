@@ -16,7 +16,8 @@ class HomeViewController: UIViewController {
     @IBOutlet weak var currentWeatherImage: UIImageView!
     @IBOutlet weak var currentWeatherTypeLabel: UILabel!
     @IBOutlet weak var tableView: UITableView!
-    var currentWeather = CurrentWeather()
+    var currentWeather: CurrentWeather!
+    var forecast: Forecast!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,13 +25,21 @@ class HomeViewController: UIViewController {
         tableView.dataSource = self
         currentWeather.downloadWeatherDetails {
             //setup UI to load data
+            self.updateUI()
         }
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-    
+    func updateUI() {
+        dateLabel.text = currentWeather.date
+        currentTempLabel.text = "\(currentWeather.currentTemp)"
+        currentWeatherTypeLabel.text = currentWeather.weatherType
+        locationLabel.text = currentWeather.cityName
+        currentWeatherImage.image = UIImage(named: currentWeather.weatherType)
+        
+    }
 
     /*
     // MARK: - Navigation

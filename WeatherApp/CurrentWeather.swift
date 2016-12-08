@@ -16,31 +16,32 @@ class CurrentWeather {
     var _currentTemp: Double!
     
     var cityName: String {
-        guard let name = _cityName, !name.isEmpty else{
-            print("City Name is nil or empty")
-            return _cityName
+        if _cityName == nil {
+            _cityName = " "
         }
         return _cityName
     }
+    
     var weatherType: String {
-        guard let type = _weatherType, !type.isEmpty else {
-            print("Weather type is nil or empty")
-            return _weatherType
+        if _weatherType == nil {
+            _weatherType = " "
         }
         return _weatherType
     }
+    
     var currentTemp: Double {
-        guard (_currentTemp) != nil else {
+        if _currentTemp == nil {
             print("Current Tempreture is nil")
             _currentTemp = 0.0
             return _currentTemp
         }
         return _currentTemp
     }
+    
     var date: String {
-        guard let dateString = _date, !dateString.isEmpty else {
-            print("date is nil or empty")
-            return _date
+        if _date == nil {
+            print("Date is nil")
+            _date = " "
         }
         let formatter = DateFormatter()
         formatter.dateStyle = .long
@@ -59,6 +60,26 @@ class CurrentWeather {
             if let JSON = response.result.value {
                 print("JSON: \(JSON)")
             }
+            //Unwrap JSON object dictionary
+            if let dict = response.result.value as? Dictionary<String, AnyObject>{
+                if let name = dict["name"] as? String {
+                    self._cityName = name.capitalized
+                }
+                if let weather = dict["weather"] as? [Dictionary<String, AnyObject>] {
+                    if let main = weather[0]["main"] as? String {
+                        self._weatherType = main.capitalized
+                    }
+                }
+                if let main = dict["main"] as? Dictionary<String, AnyObject> {
+                    if let currentTempreture = main["temp"] as? Double {
+                        //temp comes as Kelvin. Convert to celcius
+                        let kelvinToCelcius = currentTempreture - 273.15
+                        self._currentTemp = Double(round(10 * kelvinToCelcius/10))
+                        print("Current Tempreture : \(self._currentTemp)")
+                    }
+                }
+            }
+            
         }
         completed()
     }
