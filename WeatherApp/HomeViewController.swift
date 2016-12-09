@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Alamofire
 
 class HomeViewController: UIViewController {
 
@@ -18,14 +19,18 @@ class HomeViewController: UIViewController {
     @IBOutlet weak var tableView: UITableView!
     var currentWeather: CurrentWeather!
     var forecast: Forecast!
+    var forecasts = [Forecast]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = self
+        currentWeather = CurrentWeather()
+//        forecast = Forecast()
         currentWeather.downloadWeatherDetails {
-            //setup UI to load data
-            self.updateUI()
+            self.downloadForecastData {
+                self.updateUI()
+            }
         }
     }
 
@@ -40,16 +45,28 @@ class HomeViewController: UIViewController {
         currentWeatherImage.image = UIImage(named: currentWeather.weatherType)
         
     }
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+    func downloadForecastData(completed: @escaping DownloadComplete) {
+        let forecastURL = URL(string: FORECAST_URL)
+        Alamofire.request(forecastURL!).responseJSON { response in
+            print(response.request)  // original URL request
+            print(response.response) // HTTP URL response
+            print(response.data)     // server data
+            print(response.result)   // result of response serialization
+            if let result = response.result.value {
+                print("FORECAST JSON: \(result)")
+            }
+            if let dict = response.result.value as? Dictionary<String, AnyObject> {
+                if let list = dict["list"] as? [Dictionary<String, AnyObject>] {
+                    for obj in list {
+                        let forecast = Forecast(weatherDict: obj)
+                        self.forecasts.append(forecast)
+                        print(obj)
+                    }
+                }
+            }
+            completed()
+        }
     }
-    */
 
 }
 
