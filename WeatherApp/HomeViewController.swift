@@ -8,6 +8,7 @@
 
 import UIKit
 import Alamofire
+import CoreLocation
 
 class HomeViewController: UIViewController {
 
@@ -20,18 +21,25 @@ class HomeViewController: UIViewController {
     var currentWeather: CurrentWeather!
     var forecast: Forecast!
     var forecasts = [Forecast]()
-    
+    var currentLocation: CLLocation!
+    let locationManager = CLLocationManager()
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        locationAuthStatus()
+
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = self
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startMonitoringSignificantLocationChanges()
         currentWeather = CurrentWeather()
 //        forecast = Forecast()
-        currentWeather.downloadWeatherDetails {
-            self.downloadForecastData {
-                self.updateUI()
-            }
-        }
+
     }
 
     override func didReceiveMemoryWarning() {
@@ -62,6 +70,8 @@ class HomeViewController: UIViewController {
                         self.forecasts.append(forecast)
                         print(obj)
                     }
+                    self.forecasts.remove(at: 0)
+                    self.tableView.reloadData()
                 }
             }
             completed()
@@ -75,12 +85,16 @@ class HomeViewController: UIViewController {
 private typealias TableViewDataSource = HomeViewController
 extension TableViewDataSource: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5
+        return forecasts.count
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier:"weatherCell", for: indexPath)
-        return cell
-
+        if let cell = tableView.dequeueReusableCell(withIdentifier:"weatherCell", for: indexPath) as? WeatherCell {
+            let forecast = forecasts[indexPath.row]
+            cell.configureCell(forecast: forecast)
+            return cell
+        }else {
+            return WeatherCell()
+        }
     }
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
@@ -90,6 +104,28 @@ extension TableViewDataSource: UITableViewDataSource {
 private typealias TableViewDelegate = HomeViewController
 extension TableViewDelegate: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 60.0
+        return 80.0
+    }
+}
+
+private typealias CLLocationDelegate = HomeViewController
+extension CLLocationDelegate: CLLocationManagerDelegate {
+    func locationAuthStatus() {
+        if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
+            currentLocation = locationManager.location
+            Location.sharedInstance.latitude = currentLocation.coordinate.latitude
+            Location.sharedInstance.longitude = currentLocation.coordinate.longitude
+            print("Longitude: \(Location.sharedInstance.longitude)")
+            print("Latitude: \(Location.sharedInstance.latitude)")
+            currentWeather.downloadWeatherDetails {
+                self.downloadForecastData {
+                    self.updateUI()
+                }
+            }
+            
+        }else {
+            locationManager.requestWhenInUseAuthorization()
+            locationAuthStatus()
+        }
     }
 }
